@@ -1,11 +1,4 @@
-/* Javadoc style sheet */
-/*
-Overall document style
-*/
-
 @import url('https://fonts.googleapis.com/css2?family=Rubik&display=swap');
-
-@import url('resources/fonts/dejavu.css');
 
 body {
     background-color:#ffffff;
@@ -529,7 +522,7 @@ ul.blockList ul.blockList ul.blockList li.blockList h3 {
 
 div.block {
     font-size:14px;
-    font-family:'DejaVu Serif', Georgia, "Times New Roman", Times, serif;
+    font-family: 'Rubik', sans-serif;
 }
 
 td.colLast div {
