@@ -79,7 +79,7 @@ jobs:
 
   release:
     ## Only run on a release branch
-    if: github.event_name == 'push' && contains(github.ref, 'refs/heads/release')
+    if: github.event_name == 'push' # && contains(github.ref, 'refs/heads/release')
     needs: [build]
     name: Release
     runs-on: ubuntu-latest
