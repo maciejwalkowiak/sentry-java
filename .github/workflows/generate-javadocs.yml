@@ -1,6 +1,7 @@
 name: Generate Javadocs
 on:
-  release
+  release:
+    types: [published]
 
 env:
   CMAKE_VERSION: "3.10.2.4988404"
