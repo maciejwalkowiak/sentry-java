@@ -155,6 +155,7 @@ public final class SentryTransaction extends SentryBaseEvent implements ITransac
 
   @Override
   public void finish() {
+    System.out.println("Spans: " + spans.size());
     this.timestamp = DateUtils.getCurrentDateTime();
     if (this.throwable != null) {
       hub.setSpanContext(this.throwable, this);

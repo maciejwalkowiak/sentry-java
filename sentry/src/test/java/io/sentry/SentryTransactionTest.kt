@@ -2,10 +2,15 @@ package io.sentry
 
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import java.util.function.Supplier
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+
 
 class SentryTransactionTest {
 
@@ -166,5 +171,58 @@ class SentryTransactionTest {
         val transaction = SentryTransaction("initial name")
         transaction.name = "new name"
         assertEquals("new name", transaction.transaction)
+    }
+
+    val pool = Executors.newFixedThreadPool(200)
+
+    @Test
+    fun `fuzzy`() {
+        Sentry.init {
+            it.dsn = "https://6ae91e8b6e1d41ffb25e891faf2a63a5@o420886.ingest.sentry.io/5593200"
+            it.setDebug(true)
+            it.tracesSampleRate = 1.0
+            it.setTransportFactory { _, _ -> mock() }
+        }
+
+
+        val transaction = Sentry.startTransaction("foo")
+        val futures = mutableListOf<CompletableFuture<out Any>>()
+
+        for (i in 1..10000) {
+            Thread.sleep(Random.nextLong(0, 20))
+            futures += CompletableFuture.supplyAsync(Supplier {
+                if (Random.nextInt() % 2 == 0) {
+                    val inner = Sentry.startTransaction("transaction-$i")
+                    addSpans(inner, i)
+                    inner.finish()
+                } else {
+                    addSpans(transaction, i)
+                }
+            }, pool)
+        }
+        futures.forEach { it.join() }
+        transaction.finish()
+    }
+
+    private fun addSpans(transaction: ITransaction, i: Int) {
+        Thread.sleep(Random.nextLong(0, 20))
+        val span = transaction.startChild("child-${i}")
+        span.description = "description-${i}"
+        transaction.setTag("child", "$i")
+        transaction.contexts["child-$i"] = i
+        val spanFutures = mutableListOf<CompletableFuture<out Any>>()
+        for (j in 1..100) {
+            if (Random.nextInt() % 2 == 0) {
+                spanFutures += CompletableFuture.supplyAsync(Supplier {
+                    val child = span.startChild("child-child-$i-$j")
+                    child.setTag("child-child", "$i-$j")
+                    child.finish()
+                }, pool)
+            }
+        }
+        span.spanContext.setTag("foo-$i", "bar-$i")
+        Thread.sleep(Random.nextLong(0, 20))
+        spanFutures.forEach { it.join() }
+        span.finish()
     }
 }
